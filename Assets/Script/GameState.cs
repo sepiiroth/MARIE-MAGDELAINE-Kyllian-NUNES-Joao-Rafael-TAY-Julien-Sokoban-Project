@@ -32,13 +32,13 @@ namespace ESGI
                 
             }
 
-            while (!isStable)
+            /*while (!isStable)
             {
                 PolicyEvaluation(gamma);
                 isStable = PolicyImprovement(gamma);
-            }
+            }*/
 
-            StartCoroutine(Move());
+            //StartCoroutine(Move());
         }
 
         IEnumerator Move()
@@ -50,6 +50,16 @@ namespace ESGI
                 //Debug.Log(current);
                 agent.Translate(current.policy.nextState.transform.position - current.transform.position);
                 current = current.policy.nextState;
+            }
+        }
+
+        public void ButtonClick() {
+            if(!isStable) {
+                PolicyEvaluation(gamma);
+                isStable = PolicyImprovement(gamma);
+            }
+            if(isStable) {
+                StartCoroutine(Move());
             }
         }
 
