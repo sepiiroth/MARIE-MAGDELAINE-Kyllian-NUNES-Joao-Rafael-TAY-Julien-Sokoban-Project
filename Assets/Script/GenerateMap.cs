@@ -25,7 +25,8 @@ public class GenerateMap : MonoBehaviour
         {
             for (int j = 0; j < 4; j++)
             {
-                Instantiate(prefabs[map[i * 4 + j]],
+                if (map[i * 4 + j] != 0)
+                    Instantiate(prefabs[map[i * 4 + j]],
                     new Vector3(i - 3.5f, 0.5f, j + 0.5f),
                     Quaternion.Euler(0, 0, 0));
             }

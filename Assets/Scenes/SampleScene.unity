@@ -853,9 +853,12 @@ MonoBehaviour:
   - {fileID: 727973797}
   - {fileID: 1140437143}
   - {fileID: 1493300233}
-  gamma: 0.15
+  gamma: 0.25
+  isPolicy: 1
   agent: {fileID: 83871010}
   start: {fileID: 92515932}
+  debugFloor: {fileID: 1765780890396075925, guid: b8ff86425e307ac43acad4be04a4cd4e, type: 3}
+  debugText: {fileID: 1092136844726778594, guid: d6bed4fcf2e822649b0d8f25a9820523, type: 3}
 --- !u!1 &664604345
 GameObject:
   m_ObjectHideFlags: 0
@@ -874,7 +877,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &664604346
 MeshCollider:
   m_ObjectHideFlags: 0
