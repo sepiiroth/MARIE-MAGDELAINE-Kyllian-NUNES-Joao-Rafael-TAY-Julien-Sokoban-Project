@@ -6,4 +6,5 @@ public class Action : MonoBehaviour
 {
     public int reward;
     public State nextState;
+    public float Qs = 0;
 }

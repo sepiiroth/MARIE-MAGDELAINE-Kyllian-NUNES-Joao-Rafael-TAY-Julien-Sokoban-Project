@@ -13,6 +13,9 @@ public class State : MonoBehaviour
 
     public List<Action> _a;
 
+    public int N = 0;
+    public float Return = 0;
+
     private void Awake()
     {
         Actions = GetComponents<Action>();
