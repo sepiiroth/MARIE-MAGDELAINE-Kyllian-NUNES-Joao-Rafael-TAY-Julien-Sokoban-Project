@@ -29,8 +29,8 @@ public class GameStateTDL : MonoBehaviour
         floors = new List<GameObject>();
         texts = new List<GameObject>();
         
-        SARSA(nbEp, alpha,gamma);
-        //QLearning(nbEp, alpha,gamma);
+        //SARSA(nbEp, alpha,gamma);
+        QLearning(nbEp, alpha,gamma);
         
         Debug();
         StartCoroutine(Move());
@@ -70,8 +70,12 @@ public class GameStateTDL : MonoBehaviour
             var go = Instantiate(debugFloor, s.transform.position, Quaternion.Euler(0, 0, 0));
             go.GetComponent<MeshRenderer>().material.color = new Color(s.Vs, 0, 0);
             floors.Add(go);
+            if (s.policy == null)
+            {
+                continue;
+            }
             go = Instantiate(debugText, s.transform.position, Quaternion.Euler(90, 0, 90));
-            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.##}", s.Vs);
+            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", s.policy.Qs);
             texts.Add(go);
         }
     }
@@ -97,13 +101,12 @@ public class GameStateTDL : MonoBehaviour
             State current;
             current = startState;
             Action a;
-            if (EpsilonGreedy(0.5f, 0f, nbEpisodes, i))
+            if (EpsilonGreedy(0.7f, 0.3f, nbEpisodes, i))
             {
                 a = current._a[Random.Range(0, current._a.Count - 1)];
             }
             else
             {
-                print(current);
                 a = current.policy;
             }
 
@@ -116,10 +119,19 @@ public class GameStateTDL : MonoBehaviour
                 }
                 float r = a.reward;
                 State sPrime = a.nextState;
-                Action aPrime;
-                if (EpsilonGreedy(0.7f, 0f, nbEpisodes, i))
+                if (sPrime == finalState)
                 {
-                    aPrime = sPrime._a.Where(x=> x != sPrime.policy).ToList()[Random.Range(0,  sPrime._a.Where(x=> x != sPrime.policy).ToList().Count - 1)];
+                    break;
+                }
+                Action aPrime;
+                if (EpsilonGreedy(0.7f, 0.3f, nbEpisodes, i))
+                {
+                    var otherAction = sPrime._a.Where(x => x != sPrime.policy).ToList();
+                    if (otherAction.Count == 0)
+                    {
+                        otherAction = sPrime._a;
+                    }
+                    aPrime = otherAction[Random.Range(0,  otherAction.Count - 1)];
                 }
                 else
                 {
@@ -131,6 +143,15 @@ public class GameStateTDL : MonoBehaviour
                 T += 1;
             }
         }
+        
+        foreach (var x in state)
+        {
+            if (x._a.Count == 0)
+            {
+                continue;
+            }
+            x.policy = x._a.OrderByDescending(y => y.Qs).First();
+        }
     }
     
     void QLearning(int nbEpisodes, float alpha, float gamma)
@@ -138,10 +159,10 @@ public class GameStateTDL : MonoBehaviour
         //Init
         foreach (var s in state)
         {
-            foreach (var action in s._a)
+            /*foreach (var action in s._a)
             {
                 action.Qs = 0;
-            }
+            }*/
             if (s.Actions.Length > 0)
             {
                 s.policy = s.Actions[Random.Range(0, s.Actions.Length)];
@@ -154,7 +175,7 @@ public class GameStateTDL : MonoBehaviour
             State current;
             current = startState;
             Action a;
-            if (EpsilonGreedy(0.5f, 0f, nbEpisodes, i))
+            if (EpsilonGreedy(0.7f, 0.3f, nbEpisodes, i))
             {
                 a = current._a[Random.Range(0, current._a.Count - 1)];
             }
@@ -163,26 +184,49 @@ public class GameStateTDL : MonoBehaviour
                 print(current);
                 a = current.policy;
             }
-
-            do
+            
+            var T = 0;
+            while (T < 20)
             {
+                if (current == finalState)
+                {
+                    break;
+                }
                 float r = a.reward;
                 State sPrime = a.nextState;
-                Action aPrime;
-                if (EpsilonGreedy(0.5f, 0f, nbEpisodes, i))
+                if (sPrime == finalState)
                 {
-                    aPrime = sPrime._a[Random.Range(0, sPrime._a.Count - 1)];
+                    break;
+                }
+                Action aPrime;
+                if (EpsilonGreedy(0.7f, 0.3f, nbEpisodes, i))
+                {
+                    var otherAction = sPrime._a.Where(x => x != sPrime.policy).ToList();
+                    if (otherAction.Count == 0)
+                    {
+                        otherAction = sPrime._a;
+                    }
+                    aPrime = otherAction[Random.Range(0,  otherAction.Count - 1)];
                 }
                 else
                 {
                     aPrime = sPrime.policy;
                 }
-
                 float target = sPrime._a.OrderByDescending(x => x.Qs).First().Qs;
                 a.Qs += alpha * (r + gamma * target - a.Qs);
                 current = sPrime;
                 a = aPrime;
-            } while (current != finalState);
+                T += 1;
+            }
+        }
+        
+        foreach (var x in state)
+        {
+            if (x._a.Count == 0)
+            {
+                continue;
+            }
+            x.policy = x._a.OrderByDescending(y => y.Qs).First();
         }
     }
 }

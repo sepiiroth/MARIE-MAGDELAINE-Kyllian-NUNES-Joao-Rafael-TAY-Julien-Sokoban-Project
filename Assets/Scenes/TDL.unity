@@ -906,7 +906,7 @@ MonoBehaviour:
   agent: {fileID: 83871010}
   debugFloor: {fileID: 1765780890396075925, guid: b8ff86425e307ac43acad4be04a4cd4e, type: 3}
   debugText: {fileID: 1092136844726778594, guid: d6bed4fcf2e822649b0d8f25a9820523, type: 3}
-  nbEp: 10
+  nbEp: 1000
   alpha: 0.5
   gamma: 0.5
 --- !u!1 &664604345
