@@ -13,50 +13,99 @@ namespace ESGI
     {
         public State[] state;
 
+        [Range(0.0f, 1.0f)]
         public float gamma = 0.5f;
 
         private bool isStable = false;
-        public bool isPolicy = false;
-        public bool isClickable = true;
+        private bool isClickable = true;
 
         public Transform agent;
 
-        public State start;
+        public State startState;
+        public State finalState;
 
         public GameObject debugFloor;
         public GameObject debugText;
 
         private List<GameObject> floors;
         private List<GameObject> texts;
+        
+        public enum ITERATION_TYPE // your custom enumeration
+        {
+            PolicyIteration,
+            ValueIteration,
+        };
+    
+        public ITERATION_TYPE algo = ITERATION_TYPE.PolicyIteration; 
 
         // Start is called before the first frame update
         void Start()
         {
+            state = GameManager.Instance().GetStates();
             floors = new List<GameObject>();
             texts = new List<GameObject>();
 
-            if (isPolicy)
+            startState = state[12];
+            finalState = state[3];
+
+            if (algo == ITERATION_TYPE.PolicyIteration)
             {
                 PolicyInitialization();
             }
             
-            foreach (var s in state)
+            /*foreach (var s in state)
             {
                 var go = Instantiate(debugFloor, s.transform.position, Quaternion.Euler(0, 0, 0));
                 go.GetComponent<MeshRenderer>().material.color = new Color(s.Vs, 0, 0);
                 floors.Add(go);
-            }
+            }*/
         }
 
         IEnumerator Move()
         {
-            var current = start;
+            var current = startState;
             while (current.policy != null)
             {
                 yield return new WaitForSeconds(1);
                 //Debug.Log(current);
-                agent.Translate(current.policy.nextState.transform.position - current.transform.position);
+                var dir = Vector3.zero;
+                switch (current.policy.dir)
+                {
+                    case Direction.Up:
+                        dir = new Vector3(-1, 0, 0);
+                        break;
+                    case Direction.Down:
+                        dir = new Vector3(1, 0, 0);
+                        break;
+                    case Direction.Right:
+                        dir = new Vector3(0, 0, 1);
+                        break;
+                    case Direction.Left:
+                        dir = new Vector3(0, 0, -1);
+                        break;
+                }
+                agent.position += dir;
                 current = current.policy.nextState;
+            }
+        }
+    
+        void Debug()
+        {
+            floors.ForEach(x => Destroy(x));
+            floors.Clear();
+            texts.ForEach(x => Destroy(x));
+            texts.Clear();
+            
+            var grid = GameManager.Instance().GetGrid();
+        
+            for (int i = 0; i < grid.Length; i++)
+            {
+                var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
+                go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].Vs, 0);
+                floors.Add(go);
+                go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].Vs);
+                texts.Add(go);
             }
         }
 
@@ -65,7 +114,7 @@ namespace ESGI
             {
                 return;
             }
-            if (isPolicy)
+            if (algo == ITERATION_TYPE.PolicyIteration)
             {
                 if(!isStable) {
                     PolicyEvaluation(gamma);
@@ -93,9 +142,9 @@ namespace ESGI
             for (int i = 0; i < state.Length; i++)
             {
                 //state[i].Vs = 0;
-                if (state[i].Actions.Length > 0)
+                if (state[i].actions.Count > 0)
                 {
-                    state[i].policy = state[i].Actions[Random.Range(0, state[i].Actions.Length)];
+                    state[i].policy = state[i].actions[Random.Range(0, state[i].actions.Count)];
                 }
                 
             }
@@ -133,14 +182,14 @@ namespace ESGI
                 }
                 Action temp = s.policy;
 
-                Action action = s._a[0];
+                Action action = s.actions[0];
                 float res = action.reward + gamma * action.nextState.Vs;
-                for (int i = 1; i < s._a.Count; i++)
+                for (int i = 1; i < s.actions.Count; i++)
                 {
-                    if (s._a[i].reward + gamma * s._a[i].nextState.Vs > res)
+                    if (s.actions[i].reward + gamma * s.actions[i].nextState.Vs > res)
                     {
-                        action = s._a[i];
-                        res = s._a[i].reward + gamma * s._a[i].nextState.Vs;
+                        action = s.actions[i];
+                        res = s.actions[i].reward + gamma * s.actions[i].nextState.Vs;
                     }
                 }
                 s.policy = action;
@@ -163,12 +212,12 @@ namespace ESGI
                 delta = 0;
                 foreach (var s in state)
                 {
-                    if (s._a.Count == 0)
+                    if (s.actions.Count == 0)
                     {
                         continue;
                     }
                     float temp = s.Vs;
-                    s.Vs = s._a.Max(x => x.reward + gamma * x.nextState.Vs);
+                    s.Vs = s.actions.Max(x => x.reward + gamma * x.nextState.Vs);
                     delta = Mathf.Max(delta, Mathf.Abs(temp - s.Vs));
 
                 }
@@ -176,31 +225,13 @@ namespace ESGI
             
             foreach (var s in state)
             {
-                if (s._a.Count == 0)
+                if (s.actions.Count == 0)
                 {
                     continue;
                 }
-                s.policy = s._a.OrderByDescending(x => x.nextState.Vs).First();
+                s.policy = s.actions.OrderByDescending(x => x.nextState.Vs).First();
             }
             
-        }
-
-        void Debug()
-        {
-            floors.ForEach(x => Destroy(x));
-            floors.Clear();
-            texts.ForEach(x => Destroy(x));
-            texts.Clear();
-            
-            foreach (var s in state)
-            {
-                var go = Instantiate(debugFloor, s.transform.position, Quaternion.Euler(0, 0, 0));
-                go.GetComponent<MeshRenderer>().material.color = new Color(s.Vs, 0, 0);
-                floors.Add(go);
-                go = Instantiate(debugText, s.transform.position, Quaternion.Euler(90, 0, 90));
-                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.##}", s.Vs);
-                texts.Add(go);
-            }
         }
     }
 }

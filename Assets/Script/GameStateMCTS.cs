@@ -11,8 +11,16 @@ public class GameStateMCTS : MonoBehaviour
     public State[] state;
     public State finalState;
     public State startState;
+    public State[] deadlyState;
     public Transform agent;
-    
+
+    public int nbEpisode;
+    [Range(0.0f, 1.0f)]
+    public float epsilon;
+
+    public bool FV;
+    public bool Policy;
+    public bool ES;
     
     public GameObject debugFloor;
     public GameObject debugText;
@@ -22,19 +30,33 @@ public class GameStateMCTS : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        deadlyState = GameManager.Instance().GetDeadlyStates();
+        state = GameManager.Instance().GetStates();
         floors = new List<GameObject>();
         texts = new List<GameObject>();
-        MCTS_EV_OffPolicy(20);
-        //MCTS_EV_OnPolicy(50);
+
+        startState = state[12];
+        finalState = state[3];
+        
+        print(state[7].Vs);
+        MCTS(nbEpisode, FV, Policy, ES);
         Debug();
+        print(state[7].Vs);
         StartCoroutine(Move());
     }
 
 
-    bool EpsilonGreedy(float pInit, float pFinal, int nbEpisodes, int currentEpisode)
+    bool EpsilonGreedyDecay(float pInit, float pFinal, int nbEpisodes, int currentEpisode)
     {
         float r = Mathf.Max((nbEpisodes - currentEpisode) / nbEpisodes, 0);
         float epsilon = (pInit - pFinal) * r + pFinal;
+        float p = Random.Range(0.0f, 1.0f);
+
+        return p < epsilon;
+    }
+    
+    bool EpsilonGreedy()
+    {
         float p = Random.Range(0.0f, 1.0f);
 
         return p < epsilon;
@@ -47,114 +69,163 @@ public class GameStateMCTS : MonoBehaviour
         {
             yield return new WaitForSeconds(1);
             //Debug.Log(current);
-            agent.Translate(current.policy.nextState.transform.position - current.transform.position);
+            var dir = Vector3.zero;
+            switch (current.policy.dir)
+            {
+                case Direction.Up:
+                    dir = new Vector3(-1, 0, 0);
+                    break;
+                case Direction.Down:
+                    dir = new Vector3(1, 0, 0);
+                    break;
+                case Direction.Right:
+                    dir = new Vector3(0, 0, 1);
+                    break;
+                case Direction.Left:
+                    dir = new Vector3(0, 0, -1);
+                    break;
+            }
+            agent.position += dir;
             current = current.policy.nextState;
         }
     }
     
     void Debug()
     {
-        floors.ForEach(x => Destroy(x));
-        floors.Clear();
-        texts.ForEach(x => Destroy(x));
-        texts.Clear();
-            
-        foreach (var s in state)
+        var grid = GameManager.Instance().GetGrid();
+        
+        for (int i = 0; i < grid.Length; i++)
         {
-            var go = Instantiate(debugFloor, s.transform.position, Quaternion.Euler(0, 0, 0));
-            go.GetComponent<MeshRenderer>().material.color = new Color(s.Vs, 0, 0);
+            var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
+            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].Vs, 0);
             floors.Add(go);
-            go = Instantiate(debugText, s.transform.position, Quaternion.Euler(90, 0, 90));
-            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.##}", s.Vs);
+            go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].Vs);
             texts.Add(go);
         }
     }
 
-    void MCTS_EV_OffPolicy(int nbEpisode)
+    void UpdatePolicy()
     {
-        foreach (var s in state)
+        foreach (var x in state)
         {
-            s.N = 0;
-            s.Return = 0;
-            if (s.Actions.Length > 0)
-            {
-                s.policy = s.Actions[Random.Range(0, s.Actions.Length)];
-            }
-        }
-
-        foreach (var s in state)
-        {
-            if (s.policy == null)
+            if (x.policy == null)
             {
                 continue;
             }
-            for (int i = 0; i < nbEpisode; i++)
+            if (x.N == 0 | x.Return == 0)
             {
-                List<State> listS = new List<State>();
-                List<Action> listA = new List<Action>();
-                List<int> listR = new List<int>();
-                int T = 0;
-                State current = s;
-                while (T < 20)
-                {
-                    if (current == finalState)
-                    {
-                        break;
-                    }
-                    
-                    listS.Add(current);
-                    listA.Add(current.policy);
-                    listR.Add(current.policy.reward);
-                    
-                    if (EpsilonGreedy(0.5f, 0f, nbEpisode, i))
-                    {
-                        current = current._a[Random.Range(0, current._a.Count - 1)].nextState;
-                    }else
-                    {
-                        current = current.policy.nextState;
-                    }
-                    T++;
-                }
-            
-                float G = 0;
-                for (int t = T - 1; t >= 0; t--)
-                {
-                    G += listR[t];
-                    listS[t].Return += G;
-                    listS[t].N += 1;
-                }
-
+                x.Vs = 0;
+                continue;
             }
-            
-            foreach (var x in state)
-            {
-                if (x.policy == null)
-                {
-                    continue;
-                }
-                if (x.N == 0 | x.Return == 0)
-                {
-                    x.Vs = 0;
-                    continue;
-                }
-                x.Vs = x.Return / x.N;
-            }
-            
-            foreach (var x in state)
-            {
-                if (x._a.Count == 0)
-                {
-                    continue;
-                }
-                x.policy = x._a.OrderByDescending(y => y.nextState.Vs).First();
-            }
-
+            x.Vs = x.Return / (float)x.N;
         }
         
-        
+        foreach (var x in state)
+        {
+            if (x.actions.Count == 0)
+            {
+                continue;
+            }
+            x.policy = x.actions.OrderByDescending(y => y.nextState.Vs).First();
+        }
     }
 
-    void MCTS_EV_OnPolicy(int nbEpisode)
+    int GenerateEpisode(int currentEpisode, State start, List<State> listS, List<Action> listA, List<int> listR)
+    {
+        int T = 0;
+        State current = start;
+        while (T < 10000)
+        {
+            if (current == finalState)
+            {
+                break;
+            }
+                
+            if (deadlyState.Contains(current))
+            {
+                //print(listR.Last());
+                break;
+            }
+                
+            listS.Add(current);
+            Action nextAction;
+            if (EpsilonGreedy())
+            {
+                var otherAction = current.actions.Where(x => x != current.policy).ToList();
+                if (otherAction.Count == 0)
+                {
+                    otherAction = current.actions;
+                }
+                nextAction = otherAction[Random.Range(0, otherAction.Count - 1)];
+                current = nextAction.nextState;
+            }else
+            {
+                nextAction = current.policy;
+                current = nextAction.nextState;
+            }
+                
+            listA.Add(nextAction);
+            listR.Add(nextAction.reward);
+
+            T++;
+        }
+        
+        return T;
+    }
+
+    void MCTS(int nbEpisode, bool MCTS_FV, bool Policy, bool ES)
+    {
+        foreach (var s in state)
+        {
+            s.N = 0;
+            s.Return = 0;
+            if (s.actions.Count > 0)
+            {
+                s.policy = s.actions[Random.Range(0, s.actions.Count)];
+            }
+        }
+        
+        var stateWithES = state.Where(x => x.actions.Count > 0).ToList();
+        for (int i = 0; i < nbEpisode; i++)
+        {
+            List<State> listS = new List<State>();
+            List<Action> listA = new List<Action>();
+            List<int> listR = new List<int>();
+            State start = ES ? stateWithES[Random.Range(0, stateWithES.Count - 1)] : startState;
+            int T = GenerateEpisode(i, start, listS, listA, listR);
+
+            float G = 0;
+            for (int t = T - 1; t >= 0; t--)
+            {
+                if (MCTS_FV)
+                {
+                    if (listS.Take(t - 1).Contains(listS[t]))
+                    {
+                        continue;
+                    }
+                }
+                G += listR[t];
+                listS[t].Return += G;
+                listS[t].N += 1;
+            }
+
+            if (Policy)
+            {
+                UpdatePolicy();
+            }
+
+        }
+
+        if (!Policy)
+        {
+            UpdatePolicy();
+        }
+        
+
+    }
+
+    /*void MCTS_EV_OnPolicy(int nbEpisode)
     {
         foreach (var s in state)
         {
@@ -166,65 +237,60 @@ public class GameStateMCTS : MonoBehaviour
             }
         }
 
-        foreach (var s in state)
+        for (int i = 0; i < nbEpisode; i++)
         {
-            if (s.policy == null)
+            List<State> listS = new List<State>();
+            List<Action> listA = new List<Action>();
+            List<int> listR = new List<int>();
+            int T = 0;
+            State current = startState;
+            while (T < 10000)
             {
-                continue;
-            }
-            for (int i = 0; i < nbEpisode; i++)
-            {
-                List<State> listS = new List<State>();
-                List<Action> listA = new List<Action>();
-                List<int> listR = new List<int>();
-                int T = 0;
-                State current = s;
-                while (T < 20)
+                if (current == finalState)
                 {
-                    if (current == finalState)
-                    {
-                        break;
-                    }
-                    listS.Add(current);
-                    listA.Add(current.policy);
-                    listR.Add(current.policy.reward);
-                    current = current.policy.nextState;
-                    T++;
-                }
-            
-                float G = 0;
-                for (int t = T - 1; t >= 0; t--)
-                {
-                    G += listR[t];
-                    listS[t].Return += G;
-                    listS[t].N += 1;
+                    break;
                 }
                 
-                foreach (var x in state)
+                if (deadlyState.Contains(current))
                 {
-                    if (x.policy == null)
-                    {
-                        continue;
-                    }
-                    if (x.N == 0 | x.Return == 0)
-                    {
-                        x.Vs = 0;
-                        continue;
-                    }
-                    x.Vs = x.Return / x.N;
+                    //print(listR.Last());
+                    break;
                 }
-            
-                foreach (var x in state)
+                
+                listS.Add(current);
+                Action nextAction;
+                if (EpsilonGreedy())
                 {
-                    if (x._a.Count == 0)
+                    var otherAction = current.actions.Where(x => x != current.policy).ToList();
+                    if (otherAction.Count == 0)
                     {
-                        continue;
+                        otherAction = current.actions;
                     }
-                    x.policy = x._a.OrderByDescending(y => y.nextState.Vs).First();
-                }
 
+                    nextAction = otherAction[Random.Range(0, otherAction.Count - 1)];
+                    current = nextAction.nextState;
+                }else
+                {
+                    nextAction = current.policy;
+                    current = nextAction.nextState;
+                }
+                
+                listA.Add(nextAction);
+                listR.Add(nextAction.reward);
+
+                T++;
             }
 
+            float G = 0;
+            for (int t = T - 1; t >= 0; t--)
+            {
+                G += listR[t];
+                listS[t].Return += G;
+                listS[t].N += 1;
+            }
+            
+            UpdatePolicy();
+
         }
-    }
+    }*/
 }
