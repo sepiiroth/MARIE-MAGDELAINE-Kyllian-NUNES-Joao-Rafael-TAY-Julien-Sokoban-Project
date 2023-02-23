@@ -42,8 +42,8 @@ public class GameStateTDL : MonoBehaviour
         floors = new List<GameObject>();
         texts = new List<GameObject>();
 
-        startState = state[12];
-        finalState = state[3];
+        startState = state[3 + 16 * 10];
+        finalState = state[9 + 16 * 5];
 
         if (algo == TDL_TYPE.SARSA)
         {
@@ -115,7 +115,7 @@ public class GameStateTDL : MonoBehaviour
         for (int i = 0; i < grid.Length; i++)
         {
             var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
-            if (state[i].policy == null)
+            /*if (state[i].policy == null)
             {
                 go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
                 floors.Add(go);
@@ -125,7 +125,7 @@ public class GameStateTDL : MonoBehaviour
             floors.Add(go);
             go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
             go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
-            texts.Add(go);
+            texts.Add(go);*/
         }
     }
 
@@ -138,7 +138,7 @@ public class GameStateTDL : MonoBehaviour
             {
                 action.Qs = 0;
             }*/
-            if (s.actions.Count > 0)
+            if (s != null && s.actions.Count > 0)
             {
                 s.policy = s.actions[Random.Range(0, s.actions.Count)];
             }
@@ -195,7 +195,7 @@ public class GameStateTDL : MonoBehaviour
         
         foreach (var x in state)
         {
-            if (x.actions.Count == 0)
+            if (x == null || x.actions.Count == 0)
             {
                 continue;
             }

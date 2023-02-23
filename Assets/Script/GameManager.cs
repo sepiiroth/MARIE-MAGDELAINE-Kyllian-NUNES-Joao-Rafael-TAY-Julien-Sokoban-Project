@@ -14,10 +14,14 @@ public class GameManager : MonoBehaviour
     
     public GameObject[] prefabs;
 
+    public int nbBox = 0;
+
     public Vector2 size = new Vector2(4,4);
     
     private State[] state;
     private int[] map;
+    private int[] playerState;
+    private List<int[]> boxState;
 
     public GameObject[] grid;
 
@@ -28,6 +32,14 @@ public class GameManager : MonoBehaviour
     {
         _singeleton = this;
         map = new int[(int)size.y * (int)size.x];
+        for (int k = 0; k < nbBox; k++)
+        {
+            if (k == 0) boxState = new List<int[]>();
+                
+            var tempTabInt = new int[(int)size.y * (int)size.x];
+            boxState.Add(tempTabInt);
+        }
+        playerState = new int[(int)size.y * (int)size.x];
 
         for (int i = 0; i < grid.Length; i++)
         {
@@ -45,8 +57,19 @@ public class GameManager : MonoBehaviour
 
             if (grid[i].CompareTag("Deadly"))
                 map[i] = -1;
+            
+            //Player State
+            playerState[i] = i;
+
+            //Box State
+            for (int k = 0; k < nbBox; k++)
+            {
+                boxState[k][i] = i;
+            }
         }
-        state = new State[(int)size.y * (int)size.x];
+        
+        
+        state = new State[(int)size.y * (int)size.x * (int)size.y * (int)size.x];
         deadlyCase = new List<State>();
 
         
@@ -60,17 +83,31 @@ public class GameManager : MonoBehaviour
                     new Vector3(j - 3.5f, 0.15f, i + 0.5f),
                     Quaternion.Euler(0, 0, 0));
 
-                var Vs = 0;
-                if (map[i * (int) size.x + j] == 3) Vs = 1;
-                if (map[i * (int) size.x + j] == -1) Vs = -1;
-                State s = new State(Vs, null, (i * (int) size.x + j).ToString());
-                state[i * (int) size.x + j] = s;
-                
-                //Deadly Case
-                if (map[i * (int) size.x + j] == -1)
+                for (int yBox = 0; yBox < size.y; yBox++)
                 {
-                    deadlyCase.Add(s);
+                    for (int xBox = 0; xBox < size.x; xBox++)
+                    {
+                        var Vs = 0;
+                        if (map[boxState[0][yBox * (int)size.x + xBox]] == 3) Vs = 1;
+                        if (map[boxState[0][yBox * (int)size.x + xBox]] == -1) Vs = -1;
+                        string name = String.Concat(playerState[i * (int) size.x + j].ToString(), " - ", boxState[0][yBox * (int)size.x + xBox].ToString());
+                        State s = new State(Vs, null, name);
+                        if (playerState[i * (int) size.x + j] == boxState[0][yBox * (int)size.x + xBox])
+                        {
+                            s = null;
+                        }
+                        state[i * (int) size.x + j + ((yBox * (int)size.x + xBox) * (int)(size.x * size.y))] = s;
+                        //Deadly Case
+                        if (map[i * (int) size.x + j] == -1)
+                        {
+                            deadlyCase.Add(s);
+                        }
+                    }
                 }
+                
+                
+                
+                
             }
         }
 
@@ -79,9 +116,18 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0; j < size.x; j++)
             {
-                if (map[i * (int) size.x + j] != 3 && map[i * (int) size.x + j] != 1 && map[i * (int) size.x + j] != -1)
+                for (int yBox = 0; yBox < size.y; yBox++)
                 {
-                    state[i * (int) size.x + j].InitializeActions(map, state, j, i); 
+                    for (int xBox = 0; xBox < size.x; xBox++)
+                    {
+                        if (map[yBox * (int) size.x + xBox] != 3 && map[i * (int) size.x + j] != 1 &&
+                            map[i * (int) size.x + j] != -1 && map[yBox * (int) size.x + xBox] != -1 && map[yBox * (int) size.x + xBox] != 1
+                            && state[i * (int) size.x + j + ((yBox * (int)size.x + xBox) * (int)(size.x * size.y))] != null)
+                        {
+                            state[i * (int) size.x + j + ((yBox * (int) size.x + xBox) * (int) (size.x * size.y))]
+                                .InitializeActions(map, state, playerState, boxState, j, i, xBox, yBox);
+                        }
+                    }
                 }
             }
         }
