@@ -9,9 +9,10 @@ using Random = UnityEngine.Random;
 public class GameStateTDL : MonoBehaviour
 {
     public State[] state;
-    public State finalState;
+    public State[] finalState;
     public State startState;
     public Transform agent;
+    public Transform box;
     
     
     public GameObject debugFloor;
@@ -43,7 +44,7 @@ public class GameStateTDL : MonoBehaviour
         texts = new List<GameObject>();
 
         startState = state[3 + 16 * 10];
-        finalState = state[9 + 16 * 5];
+        finalState = new State[]{state[9 + 16 * 5],state[6 + 16 * 5], state[1 + 16 * 5], state[4 + 16 * 5] };
 
         if (algo == TDL_TYPE.SARSA)
         {
@@ -83,6 +84,7 @@ public class GameStateTDL : MonoBehaviour
             yield return new WaitForSeconds(1);
             //Debug.Log(current);
             var dir = Vector3.zero;
+            var dirBox = Vector3.zero;
             switch (current.policy.dir)
             {
                 case Direction.Up:
@@ -97,8 +99,25 @@ public class GameStateTDL : MonoBehaviour
                 case Direction.Left:
                     dir = new Vector3(0, 0, -1);
                     break;
+                case Direction.PushUp:
+                    dir = new Vector3(-1, 0, 0);
+                    dirBox = new Vector3(-1, 0, 0);
+                    break;
+                case Direction.PushDown:
+                    dir = new Vector3(1, 0, 0);
+                    dirBox = new Vector3(1, 0, 0);
+                    break;
+                case Direction.PushRight:
+                    dir = new Vector3(0, 0, 1);
+                    dirBox = new Vector3(0, 0, 1);
+                    break;
+                case Direction.PushLeft:
+                    dir = new Vector3(0, 0, -1);
+                    dirBox = new Vector3(0, 0, -1);
+                    break;
             }
             agent.position += dir;
+            box.position += dirBox;
             current = current.policy.nextState;
         }
     }
@@ -115,6 +134,10 @@ public class GameStateTDL : MonoBehaviour
         for (int i = 0; i < grid.Length; i++)
         {
             var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
+            if (grid[i].CompareTag("Final"))
+            {
+                go.GetComponent<MeshRenderer>().material.color = Color.green;
+            }
             /*if (state[i].policy == null)
             {
                 go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
@@ -150,9 +173,10 @@ public class GameStateTDL : MonoBehaviour
             State current;
             current = startState;
             Action a;
-            if (EpsilonGreedyDecay(0.7f, 0.3f, nbEpisodes, i))
+            //if (EpsilonGreedyDecay(0.7f, 0.3f, nbEpisodes, i))
+            if (EpsilonGreedy())
             {
-                a = current.actions[Random.Range(0, current.actions.Count - 1)];
+                a = current.actions[Random.Range(0, current.actions.Count)];
             }
             else
             {
@@ -162,13 +186,13 @@ public class GameStateTDL : MonoBehaviour
             var T = 0;
             while (T < 10000)
             {
-                if (current == finalState)
+                if (finalState.Contains(current))
                 {
                     break;
                 }
                 float r = a.reward;
                 State sPrime = a.nextState;
-                if (sPrime == finalState)
+                if (finalState.Contains(sPrime))
                 {
                     break;
                 }
@@ -180,7 +204,7 @@ public class GameStateTDL : MonoBehaviour
                     {
                         otherAction = sPrime.actions;
                     }
-                    aPrime = otherAction[Random.Range(0,  otherAction.Count - 1)];
+                    aPrime = otherAction[Random.Range(0,  otherAction.Count)];
                 }
                 else
                 {
@@ -212,7 +236,7 @@ public class GameStateTDL : MonoBehaviour
             {
                 action.Qs = 0;
             }*/
-            if (s.actions.Count > 0)
+            if (s != null && s.actions.Count > 0)
             {
                 s.policy = s.actions[Random.Range(0, s.actions.Count)];
             }
@@ -226,7 +250,7 @@ public class GameStateTDL : MonoBehaviour
             Action a;
             if (EpsilonGreedyDecay(0.7f, 0.3f, nbEpisodes, i))
             {
-                a = current.actions[Random.Range(0, current.actions.Count - 1)];
+                a = current.actions[Random.Range(0, current.actions.Count)];
             }
             else
             {
@@ -236,13 +260,13 @@ public class GameStateTDL : MonoBehaviour
             var T = 0;
             while (T < 10000)
             {
-                if (current == finalState)
+                if (finalState.Contains(current))
                 {
                     break;
                 }
                 float r = a.reward;
                 State sPrime = a.nextState;
-                if (sPrime == finalState)
+                if (finalState.Contains(sPrime))
                 {
                     break;
                 }
@@ -254,7 +278,7 @@ public class GameStateTDL : MonoBehaviour
                     {
                         otherAction = sPrime.actions;
                     }
-                    aPrime = otherAction[Random.Range(0,  otherAction.Count - 1)];
+                    aPrime = otherAction[Random.Range(0,  otherAction.Count)];
                 }
                 else
                 {
@@ -270,7 +294,7 @@ public class GameStateTDL : MonoBehaviour
         
         foreach (var x in state)
         {
-            if (x.actions.Count == 0)
+            if (x == null || x.actions.Count == 0)
             {
                 continue;
             }

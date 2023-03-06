@@ -45,51 +45,73 @@ public class State
          var reward = 0;
          State nextMove = null;
          State playerMove = null;
+         Direction nextDirection = Direction.Left;
+         
+         
          if (x > 0 && map[(x - 1 )+ 4 * y] != 1)
          {
              //playerMove = states[(x - 1) + y * (int) size.x + ((yBox * (int) size.x +xBox) * (int) (size.x * size.y))];
              nextMove = GetNextMove(x - 1, y, xBox, yBox, playerState, boxState, map, states,Direction.Left);
              if (nextMove != null)
              {
-                 if(xBox - 1 > 0 && map[(xBox - 1) + 4 * (yBox)] != 1)
+                 nextDirection = Direction.Left;
+                 if (((x - 1 )+ 4 * y) == (xBox + 4 * yBox))
+                 {
                      reward = GetRewardForState(map[(xBox - 1 )+ 4 * yBox]);
-                 actions.Add(new Action(reward, nextMove, reward, Direction.Left));
+                     nextDirection = Direction.PushLeft;
+                 }
+                 actions.Add(new Action(reward, nextMove, reward, nextDirection));
              }
          }
          
+         reward = 0;
          if (x < 3 && map[(x + 1 )+ 4 * y] != 1)
          {
              //playerMove = states[(x + 1) + y * (int) size.x + ((yBox * (int) size.x +xBox) * (int) (size.x * size.y))];
              nextMove = GetNextMove(x + 1, y, xBox, yBox, playerState, boxState, map, states,Direction.Right);
              if (nextMove != null )
              {
-                 if(xBox + 1 < 3 && map[(xBox + 1) + 4 * yBox] != 1)
-                    reward = GetRewardForState(map[(xBox + 1) + 4 * yBox]);
-                 actions.Add(new Action(reward, nextMove, reward, Direction.Right));
+                 nextDirection = Direction.Right;
+                 if (((x + 1 )+ 4 * y) == (xBox + 4 * yBox))
+                 {
+                     reward = GetRewardForState(map[(xBox + 1) + 4 * yBox]);
+                     nextDirection = Direction.PushRight;
+                 }
+                 actions.Add(new Action(reward, nextMove, reward, nextDirection));
              }
          }
          
+         reward = 0;
          if (y > 0 && map[x + 4 * (y - 1)] != 1)
          {
             // playerMove = states[x + (y - 1) * (int) size.x + ((yBox * (int) size.x +xBox) * (int) (size.x * size.y))];
              nextMove = GetNextMove(x, y - 1, xBox, yBox, playerState, boxState, map, states,Direction.Up);
              if (nextMove != null)
              {
-                 if(yBox - 1 > 0 && map[(xBox) + 4 * (yBox - 1)] != 1)
-                    reward = GetRewardForState(map[(xBox) + 4 * (yBox - 1)]);
-                 actions.Add(new Action(reward, nextMove, reward, Direction.Up));
+                 nextDirection = Direction.Up;
+                 if ((x + 4 * (y - 1)) == (xBox + 4 * yBox))
+                 {
+                     reward = GetRewardForState(map[(xBox) + 4 * (yBox - 1)]);
+                     nextDirection = Direction.PushUp;
+                 }
+                 actions.Add(new Action(reward, nextMove, reward, nextDirection));
              }
          }
          
+         reward = 0;
          if (y < 3 && map[x + 4 * (y + 1)] != 1)
          {
              //playerMove = states[x + (y + 1) * (int) size.x + ((yBox * (int) size.x +xBox) * (int) (size.x * size.y))];
              nextMove = GetNextMove(x , y + 1, xBox, yBox, playerState, boxState, map, states,Direction.Down);
              if (nextMove != null)
              {
-                 if (yBox + 1 < 3 && map[(xBox) + 4 * (yBox + 1)] != 1)
+                 nextDirection = Direction.Down;
+                 if ((x + 4 * (y + 1)) == (xBox + 4 * yBox))
+                 {
                      reward = GetRewardForState(map[(xBox) + 4 * (yBox + 1)]);
-                 actions.Add(new Action(reward, nextMove, reward, Direction.Down));
+                     nextDirection = Direction.PushDown;
+                 }
+                 actions.Add(new Action(reward, nextMove, reward, nextDirection));
              }
          }
      }
@@ -115,19 +137,19 @@ public class State
              switch (decalage)
              {
                  case Direction.Left:
-                     if (x > 0 && map[yBox * (int) size.x + (xBox - 1)] != 1)
+                     if (xBox > 0 && map[yBox * (int) size.x + (xBox - 1)] != 1)
                          nextMove = states[x + y * (int) size.x + ((yBox * (int) size.x + (xBox - 1)) * (int) (size.x * size.y))];
                      break;
                  case Direction.Right:
-                     if (x < 3 && map[yBox * (int) size.x + (xBox + 1)] != 1)
+                     if (xBox < 3 && map[yBox * (int) size.x + (xBox + 1)] != 1)
                         nextMove = states[x + y * (int) size.x + ((yBox * (int) size.x + (xBox + 1)) * (int) (size.x * size.y))];
                      break;
                  case Direction.Up:
-                     if (y > 0 && map[(yBox - 1) * (int) size.x + xBox] != 1)
+                     if (yBox > 0 && map[(yBox - 1) * (int) size.x + xBox] != 1)
                         nextMove = states[x + y * (int) size.x + (((yBox - 1) * (int) size.x + xBox) * (int) (size.x * size.y))];
                      break;
                  case Direction.Down:
-                     if (y < 3 && map[(yBox + 1) * (int) size.x + xBox] != 1)
+                     if (yBox < 3 && map[(yBox + 1) * (int) size.x + xBox] != 1)
                         nextMove = states[x + y * (int) size.x + (((yBox + 1) * (int) size.x + xBox) * (int) (size.x * size.y))];
                      break;
              }

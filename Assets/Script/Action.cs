@@ -7,7 +7,11 @@ public enum Direction
     Up,
     Down,
     Left,
-    Right
+    Right,
+    PushUp,
+    PushDown,
+    PushLeft,
+    PushRight
 }
 
 public class Action

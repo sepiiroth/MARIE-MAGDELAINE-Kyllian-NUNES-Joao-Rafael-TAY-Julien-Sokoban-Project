@@ -20,6 +20,7 @@ namespace ESGI
         private bool isClickable = true;
 
         public Transform agent;
+        public Transform box;
 
         public State startState;
         public State finalState;
@@ -45,8 +46,8 @@ namespace ESGI
             floors = new List<GameObject>();
             texts = new List<GameObject>();
 
-            startState = state[12];
-            finalState = state[3];
+            startState = state[3 + 16 * 10];
+            finalState = state[9 + 16 * 5];
 
             if (algo == ITERATION_TYPE.PolicyIteration)
             {
@@ -62,52 +63,80 @@ namespace ESGI
         }
 
         IEnumerator Move()
+    {
+        var current = startState;
+        while (current.policy != null)
         {
-            var current = startState;
-            while (current.policy != null)
+            yield return new WaitForSeconds(1);
+            //Debug.Log(current);
+            var dir = Vector3.zero;
+            var dirBox = Vector3.zero;
+            switch (current.policy.dir)
             {
-                yield return new WaitForSeconds(1);
-                //Debug.Log(current);
-                var dir = Vector3.zero;
-                switch (current.policy.dir)
-                {
-                    case Direction.Up:
-                        dir = new Vector3(-1, 0, 0);
-                        break;
-                    case Direction.Down:
-                        dir = new Vector3(1, 0, 0);
-                        break;
-                    case Direction.Right:
-                        dir = new Vector3(0, 0, 1);
-                        break;
-                    case Direction.Left:
-                        dir = new Vector3(0, 0, -1);
-                        break;
-                }
-                agent.position += dir;
-                current = current.policy.nextState;
+                case Direction.Up:
+                    dir = new Vector3(-1, 0, 0);
+                    break;
+                case Direction.Down:
+                    dir = new Vector3(1, 0, 0);
+                    break;
+                case Direction.Right:
+                    dir = new Vector3(0, 0, 1);
+                    break;
+                case Direction.Left:
+                    dir = new Vector3(0, 0, -1);
+                    break;
+                case Direction.PushUp:
+                    dir = new Vector3(-1, 0, 0);
+                    dirBox = new Vector3(-1, 0, 0);
+                    break;
+                case Direction.PushDown:
+                    dir = new Vector3(1, 0, 0);
+                    dirBox = new Vector3(1, 0, 0);
+                    break;
+                case Direction.PushRight:
+                    dir = new Vector3(0, 0, 1);
+                    dirBox = new Vector3(0, 0, 1);
+                    break;
+                case Direction.PushLeft:
+                    dir = new Vector3(0, 0, -1);
+                    dirBox = new Vector3(0, 0, -1);
+                    break;
             }
+            agent.position += dir;
+            box.position += dirBox;
+            current = current.policy.nextState;
         }
+    }
     
-        void Debug()
-        {
-            floors.ForEach(x => Destroy(x));
-            floors.Clear();
-            texts.ForEach(x => Destroy(x));
-            texts.Clear();
-            
-            var grid = GameManager.Instance().GetGrid();
+    void Debug()
+    {
+        floors.ForEach(x => Destroy(x));
+        floors.Clear();
+        texts.ForEach(x => Destroy(x));
+        texts.Clear();
+
+        var grid = GameManager.Instance().GetGrid();
         
-            for (int i = 0; i < grid.Length; i++)
+        for (int i = 0; i < grid.Length; i++)
+        {
+            var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
+            if (grid[i].CompareTag("Final"))
             {
-                var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
-                go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].Vs, 0);
-                floors.Add(go);
-                go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
-                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].Vs);
-                texts.Add(go);
+                go.GetComponent<MeshRenderer>().material.color = Color.green;
             }
+            /*if (state[i].policy == null)
+            {
+                go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                floors.Add(go);
+                continue;
+            }
+            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
+            floors.Add(go);
+            go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
+            texts.Add(go);*/
         }
+    }
 
         public void ButtonClick() {
             if (!isClickable)
@@ -141,7 +170,7 @@ namespace ESGI
         {
             for (int i = 0; i < state.Length; i++)
             {
-                //state[i].Vs = 0;
+                if (state[i] == null) continue;
                 if (state[i].actions.Count > 0)
                 {
                     state[i].policy = state[i].actions[Random.Range(0, state[i].actions.Count)];
@@ -158,6 +187,7 @@ namespace ESGI
                 delta = 0;
                 foreach (var s in state)
                 {
+                    if (s == null) continue;
                     if (s.policy == null)
                     {
                         continue;
@@ -176,6 +206,7 @@ namespace ESGI
             bool policyStable = true;
             foreach (var s in state)
             {
+                if (s == null) continue;
                 if (s.policy == null)
                 {
                     continue;
@@ -212,6 +243,7 @@ namespace ESGI
                 delta = 0;
                 foreach (var s in state)
                 {
+                    if (s == null) continue;
                     if (s.actions.Count == 0)
                     {
                         continue;
@@ -225,6 +257,7 @@ namespace ESGI
             
             foreach (var s in state)
             {
+                if (s == null) continue;
                 if (s.actions.Count == 0)
                 {
                     continue;

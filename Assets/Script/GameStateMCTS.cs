@@ -9,10 +9,11 @@ using Random = UnityEngine.Random;
 public class GameStateMCTS : MonoBehaviour
 {
     public State[] state;
-    public State finalState;
+    public State[] finalState;
     public State startState;
     public State[] deadlyState;
     public Transform agent;
+    public Transform box;
 
     public int nbEpisode;
     [Range(0.0f, 1.0f)]
@@ -35,13 +36,13 @@ public class GameStateMCTS : MonoBehaviour
         floors = new List<GameObject>();
         texts = new List<GameObject>();
 
-        startState = state[12];
-        finalState = state[3];
+        startState = state[3 + 16 * 10];
+        finalState = new State[]{state[9 + 16 * 5],state[6 + 16 * 5], state[1 + 16 * 5], state[4 + 16 * 5] };
         
-        print(state[7].Vs);
+        //print(state[7].Vs);
         MCTS(nbEpisode, FV, Policy, ES);
         Debug();
-        print(state[7].Vs);
+        //print(state[7].Vs);
         StartCoroutine(Move());
     }
 
@@ -70,6 +71,7 @@ public class GameStateMCTS : MonoBehaviour
             yield return new WaitForSeconds(1);
             //Debug.Log(current);
             var dir = Vector3.zero;
+            var dirBox = Vector3.zero;
             switch (current.policy.dir)
             {
                 case Direction.Up:
@@ -84,24 +86,56 @@ public class GameStateMCTS : MonoBehaviour
                 case Direction.Left:
                     dir = new Vector3(0, 0, -1);
                     break;
+                case Direction.PushUp:
+                    dir = new Vector3(-1, 0, 0);
+                    dirBox = new Vector3(-1, 0, 0);
+                    break;
+                case Direction.PushDown:
+                    dir = new Vector3(1, 0, 0);
+                    dirBox = new Vector3(1, 0, 0);
+                    break;
+                case Direction.PushRight:
+                    dir = new Vector3(0, 0, 1);
+                    dirBox = new Vector3(0, 0, 1);
+                    break;
+                case Direction.PushLeft:
+                    dir = new Vector3(0, 0, -1);
+                    dirBox = new Vector3(0, 0, -1);
+                    break;
             }
             agent.position += dir;
+            box.position += dirBox;
             current = current.policy.nextState;
         }
     }
     
     void Debug()
     {
+        floors.ForEach(x => Destroy(x));
+        floors.Clear();
+        texts.ForEach(x => Destroy(x));
+        texts.Clear();
+
         var grid = GameManager.Instance().GetGrid();
         
         for (int i = 0; i < grid.Length; i++)
         {
             var go = Instantiate(debugFloor, grid[i].transform.position, Quaternion.Euler(0, 0, 0));
-            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].Vs, 0);
+            if (grid[i].CompareTag("Final"))
+            {
+                go.GetComponent<MeshRenderer>().material.color = Color.green;
+            }
+            /*if (state[i].policy == null)
+            {
+                go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                floors.Add(go);
+                continue;
+            }
+            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
             floors.Add(go);
             go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
-            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].Vs);
-            texts.Add(go);
+            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
+            texts.Add(go);*/
         }
     }
 
@@ -109,6 +143,7 @@ public class GameStateMCTS : MonoBehaviour
     {
         foreach (var x in state)
         {
+            if (x == null) continue;
             if (x.policy == null)
             {
                 continue;
@@ -123,6 +158,7 @@ public class GameStateMCTS : MonoBehaviour
         
         foreach (var x in state)
         {
+            if (x == null) continue;
             if (x.actions.Count == 0)
             {
                 continue;
@@ -137,7 +173,7 @@ public class GameStateMCTS : MonoBehaviour
         State current = start;
         while (T < 10000)
         {
-            if (current == finalState)
+            if (finalState.Contains(current))
             {
                 break;
             }
@@ -157,7 +193,9 @@ public class GameStateMCTS : MonoBehaviour
                 {
                     otherAction = current.actions;
                 }
-                nextAction = otherAction[Random.Range(0, otherAction.Count - 1)];
+
+                int index = Random.Range(0, otherAction.Count);
+                nextAction = otherAction[index];
                 current = nextAction.nextState;
             }else
             {
@@ -178,6 +216,7 @@ public class GameStateMCTS : MonoBehaviour
     {
         foreach (var s in state)
         {
+            if (s == null) continue;
             s.N = 0;
             s.Return = 0;
             if (s.actions.Count > 0)
@@ -186,13 +225,13 @@ public class GameStateMCTS : MonoBehaviour
             }
         }
         
-        var stateWithES = state.Where(x => x.actions.Count > 0).ToList();
+        var stateWithES = state.Where(x => x != null && x.actions.Count > 0).ToList();
         for (int i = 0; i < nbEpisode; i++)
         {
             List<State> listS = new List<State>();
             List<Action> listA = new List<Action>();
             List<int> listR = new List<int>();
-            State start = ES ? stateWithES[Random.Range(0, stateWithES.Count - 1)] : startState;
+            State start = ES ? stateWithES[Random.Range(0, stateWithES.Count)] : startState;
             int T = GenerateEpisode(i, start, listS, listA, listR);
 
             float G = 0;

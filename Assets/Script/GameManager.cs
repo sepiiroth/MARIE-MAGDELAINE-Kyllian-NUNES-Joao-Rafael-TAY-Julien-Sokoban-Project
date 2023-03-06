@@ -28,7 +28,7 @@ public class GameManager : MonoBehaviour
     public List<State> deadlyCase;
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         _singeleton = this;
         map = new int[(int)size.y * (int)size.x];
@@ -88,7 +88,7 @@ public class GameManager : MonoBehaviour
                     for (int xBox = 0; xBox < size.x; xBox++)
                     {
                         var Vs = 0;
-                        if (map[boxState[0][yBox * (int)size.x + xBox]] == 3) Vs = 1;
+                        if (map[boxState[0][yBox * (int)size.x + xBox]] == 3) Vs = 2;
                         if (map[boxState[0][yBox * (int)size.x + xBox]] == -1) Vs = -1;
                         string name = String.Concat(playerState[i * (int) size.x + j].ToString(), " - ", boxState[0][yBox * (int)size.x + xBox].ToString());
                         State s = new State(Vs, null, name);
@@ -98,7 +98,7 @@ public class GameManager : MonoBehaviour
                         }
                         state[i * (int) size.x + j + ((yBox * (int)size.x + xBox) * (int)(size.x * size.y))] = s;
                         //Deadly Case
-                        if (map[i * (int) size.x + j] == -1)
+                        if (map[i * (int) size.x + j] == -1 || map[yBox * (int) size.x + xBox] == -1)
                         {
                             deadlyCase.Add(s);
                         }
