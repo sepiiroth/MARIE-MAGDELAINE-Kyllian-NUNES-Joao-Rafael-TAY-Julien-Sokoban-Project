@@ -23,13 +23,15 @@ namespace ESGI
         public Transform box;
 
         public State startState;
-        public State finalState;
+        public State[] finalState;
 
         public GameObject debugFloor;
         public GameObject debugText;
 
         private List<GameObject> floors;
         private List<GameObject> texts;
+        
+        private Vector2 size;
         
         public enum ITERATION_TYPE // your custom enumeration
         {
@@ -46,8 +48,10 @@ namespace ESGI
             floors = new List<GameObject>();
             texts = new List<GameObject>();
 
-            startState = state[3 + 16 * 10];
-            finalState = state[9 + 16 * 5];
+            size = GameManager.Instance().size;
+
+            startState = state[GameManager.Instance().startPlayer + ((int) size.x * (int) size.y) * GameManager.Instance().startBox[0]];
+            finalState = GameManager.Instance().GetFinalStates();
 
             if (algo == ITERATION_TYPE.PolicyIteration)
             {
@@ -160,6 +164,7 @@ namespace ESGI
             
             
             if(isStable) {
+                print("Go");
                 StartCoroutine(Move());
                 isClickable = false;
             }

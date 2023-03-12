@@ -28,6 +28,7 @@ public class GameStateMCTS : MonoBehaviour
 
     private List<GameObject> floors;
     private List<GameObject> texts;
+    private Vector2 size;
     // Start is called before the first frame update
     void Start()
     {
@@ -36,8 +37,11 @@ public class GameStateMCTS : MonoBehaviour
         floors = new List<GameObject>();
         texts = new List<GameObject>();
 
-        startState = state[3 + 16 * 10];
-        finalState = new State[]{state[9 + 16 * 5],state[6 + 16 * 5], state[1 + 16 * 5], state[4 + 16 * 5] };
+        size = GameManager.Instance().size;
+
+        startState = state[GameManager.Instance().startPlayer + ((int) size.x * (int) size.y) * GameManager.Instance().startBox[0]];
+        print(startState.name);
+        finalState = GameManager.Instance().GetFinalStates();
         
         //print(state[7].Vs);
         MCTS(nbEpisode, FV, Policy, ES);
@@ -125,17 +129,32 @@ public class GameStateMCTS : MonoBehaviour
             {
                 go.GetComponent<MeshRenderer>().material.color = Color.green;
             }
-            /*if (state[i].policy == null)
+
+            foreach (var s in state)
             {
-                go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
-                floors.Add(go);
-                continue;
+                if (s == null)
+                {
+                    continue;
+                }
+                
+                print($"{s.name} - {s.Return} - {s.N} = {s.Vs}");
             }
-            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
-            floors.Add(go);
-            go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
-            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
-            texts.Add(go);*/
+
+            /*if (state[i] != null)
+            {
+                if (state[i].policy == null)
+                {
+                    go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                    floors.Add(go);
+                    continue;
+                }
+                go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
+                floors.Add(go);
+                go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
+                texts.Add(go);
+            }*/
+            
         }
     }
 

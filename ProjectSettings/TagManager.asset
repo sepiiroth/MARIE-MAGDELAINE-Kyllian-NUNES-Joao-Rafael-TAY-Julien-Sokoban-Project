@@ -9,6 +9,7 @@ TagManager:
   - Box
   - Final
   - Deadly
+  - Start
   layers:
   - Default
   - TransparentFX

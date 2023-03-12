@@ -13,6 +13,8 @@ public class GameStateTDL : MonoBehaviour
     public State startState;
     public Transform agent;
     public Transform box;
+
+    private Vector2 size;
     
     
     public GameObject debugFloor;
@@ -42,9 +44,10 @@ public class GameStateTDL : MonoBehaviour
         state = GameManager.Instance().GetStates();
         floors = new List<GameObject>();
         texts = new List<GameObject>();
+        size = GameManager.Instance().size;
 
-        startState = state[3 + 16 * 10];
-        finalState = new State[]{state[9 + 16 * 5],state[6 + 16 * 5], state[1 + 16 * 5], state[4 + 16 * 5] };
+        startState = state[GameManager.Instance().startPlayer + ((int) size.x * (int) size.y) * GameManager.Instance().startBox[0]];
+        finalState = GameManager.Instance().GetFinalStates();
 
         if (algo == TDL_TYPE.SARSA)
         {

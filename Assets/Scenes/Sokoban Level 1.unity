@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.17276807, g: 0.21589197, b: 0.29782572, a: 1}
+  m_IndirectSpecularColor: {r: 0.17276844, g: 0.21589246, b: 0.2978263, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -668,6 +668,8 @@ MonoBehaviour:
   - {fileID: 3876542726435203744, guid: 619c147470f81644499f1ae35908d14c, type: 3}
   nbBox: 1
   size: {x: 4, y: 4}
+  startPlayer: 0
+  startBox: 
   grid:
   - {fileID: 691662701}
   - {fileID: 616928907}
@@ -692,7 +694,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 567875395}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c34d4a0a0ccdab428113c4ed67b319c, type: 3}
   m_Name: 
@@ -701,11 +703,11 @@ MonoBehaviour:
   box: {fileID: 1691827156}
   debugFloor: {fileID: 1765780890396075925, guid: b8ff86425e307ac43acad4be04a4cd4e, type: 3}
   debugText: {fileID: 1092136844726778594, guid: d6bed4fcf2e822649b0d8f25a9820523, type: 3}
-  nbEp: 100
+  nbEp: 10
   alpha: 0.5
   gamma: 0.5
   epsilon: 0.7
-  algo: 1
+  algo: 0
 --- !u!114 &567875400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -713,14 +715,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 567875395}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 72ff9595dcbb91546b872e21c1e59872, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   agent: {fileID: 83871010}
   box: {fileID: 1691827156}
-  nbEpisode: 100
+  nbEpisode: 20
   epsilon: 0.7
   FV: 0
   Policy: 0
@@ -744,7 +746,7 @@ MonoBehaviour:
   box: {fileID: 1691827156}
   debugFloor: {fileID: 1765780890396075925, guid: b8ff86425e307ac43acad4be04a4cd4e, type: 3}
   debugText: {fileID: 1092136844726778594, guid: d6bed4fcf2e822649b0d8f25a9820523, type: 3}
-  algo: 1
+  algo: 0
 --- !u!1 &612304870
 GameObject:
   m_ObjectHideFlags: 0
@@ -1103,7 +1105,7 @@ GameObject:
   - component: {fileID: 766584895}
   m_Layer: 0
   m_Name: State (3)
-  m_TagString: Empty
+  m_TagString: Start
   m_Icon: {fileID: -1412012063857583412, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
