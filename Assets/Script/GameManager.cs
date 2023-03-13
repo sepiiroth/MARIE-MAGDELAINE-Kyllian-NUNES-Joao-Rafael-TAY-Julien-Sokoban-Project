@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -104,38 +105,23 @@ public class GameManager : MonoBehaviour
                     new Vector3(i - 3.5f, 0.15f, j + 0.5f),
                     Quaternion.Euler(0, 0, 0));
 
-                for (int yBox = 0; yBox < size.y; yBox++)
+                List<Vector2Int> boxPosition = new List<Vector2Int>();
+                if (nbBox > 0)
                 {
-                    for (int xBox = 0; xBox < size.x; xBox++)
+                    for (int yBox = 0; yBox < size.y; yBox++)
                     {
-                        var Vs = 0;
-                        if (map[boxState[0][yBox * (int)size.x + xBox]] == 3) Vs = 2;
-                        if (map[boxState[0][yBox * (int)size.x + xBox]] == -1) Vs = -1;
-                        string name = String.Concat(playerState[i * (int) size.x + j].ToString(), " - ", boxState[0][yBox * (int)size.x + xBox].ToString());
-                        State s = new State(Vs, null, name);
-                        if (playerState[i * (int) size.x + j] == boxState[0][yBox * (int)size.x + xBox])
+                        for (int xBox = 0; xBox < size.x; xBox++)
                         {
-                            s = null;
-                        }
-                        state[i * (int) size.x + j + ((yBox * (int)size.x + xBox) * (int)(size.x * size.y))] = s;
-                        
-                        //Final Case
-                        if (map[yBox * (int) size.x + xBox] == 3)
-                        {
-                            finalState.Add(s);
-                        }
-                        
-                        //Deadly Case
-                        if (map[i * (int) size.x + j] == -1 || map[yBox * (int) size.x + xBox] == -1)
-                        {
-                            deadlyCase.Add(s);
+                            boxPosition.Add(new Vector2Int(xBox, yBox));
+                            CreateState(new Vector2Int(j, i), boxPosition);
+                            boxPosition.Clear();
                         }
                     }
                 }
-                
-                
-                
-                
+                else
+                {
+                    CreateState(new Vector2Int(j, i), boxPosition);
+                }
             }
         }
 
@@ -144,26 +130,124 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0; j < size.x; j++)
             {
-                for (int yBox = 0; yBox < size.y; yBox++)
+                List<Vector2Int> boxPosition = new List<Vector2Int>();
+                if (nbBox > 0)
                 {
-                    for (int xBox = 0; xBox < size.x; xBox++)
+                    for (int yBox = 0; yBox < size.y; yBox++)
                     {
-                        if (map[yBox * (int) size.x + xBox] != 3 && map[i * (int) size.x + j] != 1 &&
-                            map[i * (int) size.x + j] != -1 && map[yBox * (int) size.x + xBox] != -1 && map[yBox * (int) size.x + xBox] != 1
-                            && state[i * (int) size.x + j + ((yBox * (int)size.x + xBox) * (int)(size.x * size.y))] != null)
+                        for (int xBox = 0; xBox < size.x; xBox++)
                         {
-                            state[i * (int) size.x + j + ((yBox * (int) size.x + xBox) * (int) (size.x * size.y))]
-                                .InitializeActions(map, state, playerState, boxState, j, i, xBox, yBox);
-                            //print($"{state[i * (int) size.x + j + ((yBox * (int) size.x + xBox) * (int) (size.x * size.y))].name} - {state[i * (int) size.x + j + ((yBox * (int) size.x + xBox) * (int) (size.x * size.y))].actions.Count}");
+                            boxPosition.Add(new Vector2Int(xBox, yBox));
+                            InitializeActions(new Vector2Int(j, i), boxPosition);
+                            boxPosition.Clear();
                         }
                     }
+                }
+                else
+                {
+                    InitializeActions(new Vector2Int(j, i), boxPosition);
                 }
             }
         }
         
     }
 
-    // Update is called once per frame
+
+    private void CreateState(Vector2Int playerPosition, List<Vector2Int> boxPosition)
+    {
+        int x = playerPosition.x;
+        int y = playerPosition.y;
+
+        int offset = (y * (int) size.x + x) * (int)Math.Pow((int)(size.x * size.y), nbBox);
+        for (int i = 0; i < nbBox; i++)
+        {
+            offset += ((boxPosition[i].y * (int) size.x + boxPosition[i].x) * (int)Math.Pow((int)(size.x * size.y), nbBox - (i +1)));
+        }
+        
+        //print($"{x} - {y} ==> {offset} / {boxPosition[0].x} - {boxPosition[0].y}");
+
+        if (boxPosition.Contains(playerPosition))
+        {
+            state[offset] = null;
+            return;
+        }
+        
+        var Vs = 0;
+        if (boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == 3)) Vs = 2;
+        if (nbBox == 0 && map[playerState[y * (int)size.x + x]] == 3) Vs = 2;
+        if (boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == -1)) Vs = -1;
+        
+        string stringBox = "";
+        if (nbBox > 0)
+        {
+            stringBox = String.Concat(stringBox, " - ", boxState[0][boxPosition[0].y * (int) size.x + boxPosition[0].x]);
+            for (int i = 1; i < nbBox; i++)
+            {
+                stringBox = String.Concat(stringBox, " - ", boxState[i][boxPosition[i].y * (int) size.x + boxPosition[i].x]);
+            }
+        }
+        
+        string name = String.Concat(playerState[y * (int) size.x + x].ToString(), stringBox);
+        //print(Vs);
+        State s = new State(Vs, null, name);
+        
+        state[offset] = s;
+                        
+        //Final Case
+        if (boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == 3))
+        {
+            finalState.Add(s);
+        }
+        
+        if (nbBox == 0 && map[playerState[y * (int)size.x + x]] == 3)
+        {
+            finalState.Add(s);
+        }
+                        
+        //Deadly Case
+        if (map[y * (int) size.x + x] == -1 || boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == -1))
+        {
+            deadlyCase.Add(s);
+        }
+    }
+
+    private void InitializeActions(Vector2Int playerPosition, List<Vector2Int> boxPosition)
+    {
+        int x = playerPosition.x;
+        int y = playerPosition.y;
+        
+        //print(boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == 3) || boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == 1) || boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == -1));
+
+        if (nbBox == 0 && map[playerState[y * (int)size.x + x]] == 3)
+        {
+            return;
+        }
+        
+        if (boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == 3) || boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == 1) || boxPosition.Any(x => map[boxState[0][x.y * (int)size.x + x.x]] == -1))
+        {
+            return;
+        }
+
+        if (map[y * (int) size.x + x] == 1 || map[y * (int) size.x + x] == -1)
+        {
+            return;
+        }
+        
+        int offset = (y * (int) size.x + x) * (int)Math.Pow((int)(size.x * size.y), nbBox);
+        for (int i = 0; i < nbBox; i++)
+        {
+            offset += ((boxPosition[i].y * (int) size.x + boxPosition[i].x) * (int)Math.Pow((int)(size.x * size.y), nbBox - (i +1)));
+        }
+
+        if (state[offset] == null)
+        {
+            return;
+        }
+        
+        state[offset].InitializeActions(map, state, playerState, boxState, x, y, boxPosition);
+        //print($"{state[offset].name} - {state[offset].actions.Count}");
+    }
+    
     public GameObject[] GetGrid()
     {
         return grid;

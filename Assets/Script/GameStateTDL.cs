@@ -46,9 +46,17 @@ public class GameStateTDL : MonoBehaviour
         texts = new List<GameObject>();
         size = GameManager.Instance().size;
 
-        startState = state[GameManager.Instance().startPlayer + ((int) size.x * (int) size.y) * GameManager.Instance().startBox[0]];
+        int offset = (GameManager.Instance().startPlayer * (int)Math.Pow((int)(size.x * size.y), GameManager.Instance().nbBox));
+        for (int i = 0; i < GameManager.Instance().nbBox; i++)
+        {
+            offset += (GameManager.Instance().startBox[i] * (int)Math.Pow((int)(size.x * size.y),GameManager.Instance().nbBox - (i + 1)));
+        }
+
+        startState = state[offset];
         finalState = GameManager.Instance().GetFinalStates();
 
+        float startTime = System.DateTime.Now.Millisecond;
+        print(System.DateTime.Now.Millisecond);
         if (algo == TDL_TYPE.SARSA)
         {
             SARSA(nbEp, alpha,gamma);
@@ -57,6 +65,9 @@ public class GameStateTDL : MonoBehaviour
         {
             QLearning(nbEp, alpha,gamma);
         }
+        print(System.DateTime.Now.Millisecond);
+        float timeEnd = System.DateTime.Now.Millisecond - startTime;
+        print($"Temps d'execution : {timeEnd}");
         
         Debug();
         StartCoroutine(Move());
@@ -141,17 +152,37 @@ public class GameStateTDL : MonoBehaviour
             {
                 go.GetComponent<MeshRenderer>().material.color = Color.green;
             }
-            /*if (state[i].policy == null)
+
+            if (GameManager.Instance().nbBox == 0)
             {
-                go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                if (state[i].policy == null)
+                {
+                    go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                    floors.Add(go);
+                    continue;
+                }
+                go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
                 floors.Add(go);
+                go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
+                texts.Add(go);
+            }
+            
+        }
+        
+        foreach (var s in state)
+        {
+            if (s == null)
+            {
                 continue;
             }
-            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
-            floors.Add(go);
-            go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
-            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
-            texts.Add(go);*/
+
+            if (s.policy == null)
+            {
+                continue;   
+            }
+                
+            print($"{s.name} - {s.policy.nextState.name} = {s.policy.Qs}");
         }
     }
 
@@ -200,7 +231,8 @@ public class GameStateTDL : MonoBehaviour
                     break;
                 }
                 Action aPrime;
-                if (EpsilonGreedyDecay(0.7f, 0.3f, nbEpisodes, i))
+                //if (EpsilonGreedyDecay(0.7f, 0.3f, nbEpisodes, i))
+                if (EpsilonGreedy())
                 {
                     var otherAction = sPrime.actions.Where(x => x != sPrime.policy).ToList();
                     if (otherAction.Count == 0)

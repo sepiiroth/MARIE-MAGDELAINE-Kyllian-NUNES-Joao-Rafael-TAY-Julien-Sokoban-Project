@@ -38,13 +38,24 @@ public class GameStateMCTS : MonoBehaviour
         texts = new List<GameObject>();
 
         size = GameManager.Instance().size;
+        
+        int offset = (GameManager.Instance().startPlayer * (int)Math.Pow((int)(size.x * size.y), GameManager.Instance().nbBox));
+        for (int i = 0; i < GameManager.Instance().nbBox; i++)
+        {
+            offset += (GameManager.Instance().startBox[i] * (int)Math.Pow((int)(size.x * size.y),GameManager.Instance().nbBox - (i + 1)));
+        }
 
-        startState = state[GameManager.Instance().startPlayer + ((int) size.x * (int) size.y) * GameManager.Instance().startBox[0]];
+        startState = state[offset];
         print(startState.name);
         finalState = GameManager.Instance().GetFinalStates();
         
         //print(state[7].Vs);
+        float startTime = System.DateTime.Now.Millisecond;
+        print(System.DateTime.Now);
         MCTS(nbEpisode, FV, Policy, ES);
+        print(System.DateTime.Now);
+        float timeEnd = System.DateTime.Now.Millisecond - startTime;
+        print($"Temps d'execution : {timeEnd}");
         Debug();
         //print(state[7].Vs);
         StartCoroutine(Move());
@@ -130,31 +141,42 @@ public class GameStateMCTS : MonoBehaviour
                 go.GetComponent<MeshRenderer>().material.color = Color.green;
             }
 
-            foreach (var s in state)
+            if (GameManager.Instance().nbBox == 0)
             {
-                if (s == null)
+                if (state[i] != null)
                 {
-                    continue;
+                    if (state[i].policy == null)
+                    {
+                        go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                        floors.Add(go);
+                        continue;
+                    }
+                    go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].Vs, 0);
+                    floors.Add(go);
+                    go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+                    go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].Vs);
+                    texts.Add(go);
                 }
-                
-                print($"{s.name} - {s.Return} - {s.N} = {s.Vs}");
+            }
+            
+            
+        }
+        
+        print($"Start : {startState.name}");
+
+        foreach (var s in state)
+        {
+            if (s == null)
+            {
+                continue;
             }
 
-            /*if (state[i] != null)
+            if (s.policy == null)
             {
-                if (state[i].policy == null)
-                {
-                    go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
-                    floors.Add(go);
-                    continue;
-                }
-                go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
-                floors.Add(go);
-                go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
-                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
-                texts.Add(go);
-            }*/
-            
+                continue;   
+            }
+                
+            print($"{s.name} - {s.Return} - {s.N} = {s.Vs} / {s.policy.Qs}");
         }
     }
 

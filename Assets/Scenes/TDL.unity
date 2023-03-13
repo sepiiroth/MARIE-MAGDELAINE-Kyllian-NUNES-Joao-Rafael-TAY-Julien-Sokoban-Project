@@ -664,7 +664,10 @@ MonoBehaviour:
   - {fileID: 1765780890396075925, guid: b8ff86425e307ac43acad4be04a4cd4e, type: 3}
   - {fileID: 7884739222098824301, guid: a42a307def86f7046ab5c21ab8f3e119, type: 3}
   - {fileID: 3876542726435203744, guid: 619c147470f81644499f1ae35908d14c, type: 3}
+  nbBox: 0
   size: {x: 4, y: 4}
+  startPlayer: 12
+  startBox: 
   grid:
   - {fileID: 1147620484}
   - {fileID: 228539739}
@@ -695,6 +698,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agent: {fileID: 83871010}
+  box: {fileID: 3876542726435203756, guid: 619c147470f81644499f1ae35908d14c, type: 3}
   debugFloor: {fileID: 1765780890396075925, guid: b8ff86425e307ac43acad4be04a4cd4e, type: 3}
   debugText: {fileID: 1092136844726778594, guid: d6bed4fcf2e822649b0d8f25a9820523, type: 3}
   nbEp: 40

@@ -50,20 +50,19 @@ namespace ESGI
 
             size = GameManager.Instance().size;
 
-            startState = state[GameManager.Instance().startPlayer + ((int) size.x * (int) size.y) * GameManager.Instance().startBox[0]];
+            int offset = (GameManager.Instance().startPlayer * (int)Math.Pow((int)(size.x * size.y), GameManager.Instance().nbBox));
+            for (int i = 0; i < GameManager.Instance().nbBox; i++)
+            {
+                offset += (GameManager.Instance().startBox[i] * (int)Math.Pow((int)(size.x * size.y),GameManager.Instance().nbBox - (i + 1)));
+            }
+
+            startState = state[offset];
             finalState = GameManager.Instance().GetFinalStates();
 
             if (algo == ITERATION_TYPE.PolicyIteration)
             {
                 PolicyInitialization();
             }
-            
-            /*foreach (var s in state)
-            {
-                var go = Instantiate(debugFloor, s.transform.position, Quaternion.Euler(0, 0, 0));
-                go.GetComponent<MeshRenderer>().material.color = new Color(s.Vs, 0, 0);
-                floors.Add(go);
-            }*/
         }
 
         IEnumerator Move()
@@ -112,7 +111,7 @@ namespace ESGI
         }
     }
     
-    void Debug()
+        void Debug()
     {
         floors.ForEach(x => Destroy(x));
         floors.Clear();
@@ -128,17 +127,32 @@ namespace ESGI
             {
                 go.GetComponent<MeshRenderer>().material.color = Color.green;
             }
-            /*if (state[i].policy == null)
+
+            if (GameManager.Instance().nbBox == 0)
             {
-                go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                if (state[i].policy == null)
+                {
+                    go.GetComponent<MeshRenderer>().material.color = new Color(state[i].Vs, 0, 0);
+                    floors.Add(go);
+                    continue;
+                }
+                go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].Vs, 0);
                 floors.Add(go);
+                go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
+                go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].Vs);
+                texts.Add(go);
+            }
+            
+        }
+
+        foreach (var s in state)
+        {
+            if (s == null)
+            {
                 continue;
             }
-            go.GetComponent<MeshRenderer>().material.color = new Color(0,state[i].policy.Qs, 0);
-            floors.Add(go);
-            go = Instantiate(debugText, grid[i].transform.position, Quaternion.Euler(90, 0, 90));
-            go.GetComponent<TextMeshPro>().text = String.Format("{0:0.###}", state[i].policy.Qs);
-            texts.Add(go);*/
+            
+            //print($"{s.name} : {s.Vs}");
         }
     }
 
@@ -149,17 +163,25 @@ namespace ESGI
             }
             if (algo == ITERATION_TYPE.PolicyIteration)
             {
-                if(!isStable) {
+                float startTime = System.DateTime.Now.Millisecond;
+                print(startTime);
+                while(!isStable) {
                     PolicyEvaluation(gamma);
                     isStable = PolicyImprovement(gamma);
                     Debug();
                 }
+                print(System.DateTime.Now.Millisecond);
+                float timeEnd = System.DateTime.Now.Millisecond - startTime;
+                print($"Temps d'execution : {timeEnd}");
             }
             else
             {
+                float startTime = System.DateTime.Now.Millisecond;
                 ValueIteration(gamma);
                 Debug();
                 isStable = true;
+                float timeEnd = System.DateTime.Now.Millisecond - startTime;
+                print($"Temps d'execution : {timeEnd}");
             }
             
             
@@ -183,6 +205,7 @@ namespace ESGI
                 
             }
         }
+        
         void PolicyEvaluation(float gamma)
         {
             float delta = 0;
@@ -228,6 +251,7 @@ namespace ESGI
                         res = s.actions[i].reward + gamma * s.actions[i].nextState.Vs;
                     }
                 }
+                //print($"{s.name} : {action.nextState.name} - {action.reward}");
                 s.policy = action;
                 if (temp != s.policy)
                 {
